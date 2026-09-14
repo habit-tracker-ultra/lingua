@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Lingua.",
+    "slug": "lingua",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "lingua",
+    "plugins": ["expo-router"],
+    "android": {
+      "package": "com.lingua.app",
+      "predictiveBackGestureEnabled": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.lingua.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
