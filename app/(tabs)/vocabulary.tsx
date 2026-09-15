@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
@@ -35,6 +35,7 @@ export default function VocabularyScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<VocabularyWord | null>(null);
   const [showMeaningOnly, setShowMeaningOnly] = useState(false);
+  const wordCountRef = useRef(0);
 
   const hasMore = words.length < totalWords;
   const normalizedSearch = useMemo(() => cleanSearch(search), [search]);
@@ -44,7 +45,7 @@ export default function VocabularyScreen() {
     else setLoadingMore(true);
     setError(null);
 
-    const from = reset ? 0 : words.length;
+    const from = reset ? 0 : wordCountRef.current;
     const to = from + PAGE_SIZE - 1;
 
     let dataQuery = supabase
@@ -54,9 +55,7 @@ export default function VocabularyScreen() {
       .order('id', { ascending: true })
       .range(from, to);
 
-    let countQuery = supabase
-      .from('vocabulary')
-      .select('id', { count: 'exact', head: true });
+    let countQuery = supabase.from('vocabulary').select('id', { count: 'exact', head: true });
 
     if (normalizedSearch) {
       const filter = `word.ilike.%${normalizedSearch}%,meaning.ilike.%${normalizedSearch}%,definition.ilike.%${normalizedSearch}%`;
@@ -81,17 +80,16 @@ export default function VocabularyScreen() {
     }
 
     const nextWords = dataResult.data ?? [];
-    setWords((current) => (reset ? nextWords : [...current, ...nextWords]));
+    const nextList = reset ? nextWords : [...words, ...nextWords];
+    wordCountRef.current = nextList.length;
+    setWords(nextList);
     setTotalWords(countResult.count ?? 0);
     setLoading(false);
     setLoadingMore(false);
-  }, [normalizedSearch, words.length]);
+  }, [normalizedSearch, words]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadVocabulary(true);
-    }, 250);
-
+    const timer = setTimeout(() => loadVocabulary(true), 250);
     return () => clearTimeout(timer);
   }, [loadVocabulary]);
 
@@ -108,7 +106,10 @@ export default function VocabularyScreen() {
           <Text style={styles.word}>{item.word}</Text>
           {item.level ? <Text style={styles.level}>{item.level}</Text> : null}
         </View>
-        <Text style={styles.meaning} numberOfLines={2}>{displayMeaning(item)}</Text>
+        <Text style={styles.meaning} numberOfLines={showMeaningOnly ? 1 : 2}>{displayMeaning(item)}</Text>
+        {!showMeaningOnly && item.definition && item.definition !== item.meaning ? (
+          <Text style={styles.definition} numberOfLines={1}>{item.definition}</Text>
+        ) : null}
       </View>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
@@ -126,9 +127,7 @@ export default function VocabularyScreen() {
           <>
             <Text style={styles.eyebrow}>VOCABULARY</Text>
             <Text style={styles.title}>Your word library.</Text>
-            <Text style={styles.subtitle}>
-              Search your complete Lingua vocabulary and open any word for its full details.
-            </Text>
+            <Text style={styles.subtitle}>Search your complete Lingua vocabulary and open any word for its full details.</Text>
 
             <View style={styles.actions}>
               <Pressable style={styles.primary} onPress={() => router.push('/practice')}>
@@ -159,17 +158,12 @@ export default function VocabularyScreen() {
             </View>
 
             <View style={styles.toolsRow}>
-              <Pressable
-                onPress={() => setShowMeaningOnly((value) => !value)}
-                style={[styles.filterChip, showMeaningOnly && styles.filterChipActive]}
-              >
+              <Pressable onPress={() => setShowMeaningOnly((value) => !value)} style={[styles.filterChip, showMeaningOnly && styles.filterChipActive]}>
                 <Text style={[styles.filterText, showMeaningOnly && styles.filterTextActive]}>
-                  {showMeaningOnly ? 'All details' : 'Compact list'}
+                  {showMeaningOnly ? 'Compact list' : 'Show definitions'}
                 </Text>
               </Pressable>
-              <Text style={styles.resultText}>
-                {normalizedSearch ? `${totalWords.toLocaleString()} matches` : 'Tap a word for details'}
-              </Text>
+              <Text style={styles.resultText}>{normalizedSearch ? `${totalWords.toLocaleString()} matches` : 'Tap a word for details'}</Text>
             </View>
 
             {loading ? (
@@ -183,9 +177,7 @@ export default function VocabularyScreen() {
               <View style={styles.errorBox}>
                 <Text style={styles.errorTitle}>Couldn’t load vocabulary</Text>
                 <Text style={styles.errorText}>{error}</Text>
-                <Pressable style={styles.retry} onPress={() => loadVocabulary(true)}>
-                  <Text style={styles.retryText}>Try again</Text>
-                </Pressable>
+                <Pressable style={styles.retry} onPress={() => loadVocabulary(true)}><Text style={styles.retryText}>Try again</Text></Pressable>
               </View>
             ) : null}
 
@@ -216,17 +208,13 @@ export default function VocabularyScreen() {
                 <Text style={styles.modalWord}>{selected?.word}</Text>
                 {selected?.level ? <Text style={styles.level}>{selected.level}</Text> : null}
               </View>
-              <Pressable onPress={() => setSelected(null)} style={styles.closeButton}>
-                <Text style={styles.closeText}>×</Text>
-              </Pressable>
+              <Pressable onPress={() => setSelected(null)} style={styles.closeButton}><Text style={styles.closeText}>×</Text></Pressable>
             </View>
 
-            {selected?.pronunciation ? (
-              <Text style={styles.pronunciation}>{selected.pronunciation}</Text>
-            ) : null}
+            {selected?.pronunciation ? <Text style={styles.pronunciation}>{selected.pronunciation}</Text> : null}
 
             <Text style={styles.detailLabel}>Meaning</Text>
-            <Text style={styles.detailText}>{displayMeaning(selected as VocabularyWord)}</Text>
+            <Text style={styles.detailText}>{selected ? displayMeaning(selected) : ''}</Text>
 
             {selected?.definition ? (
               <>
@@ -242,13 +230,8 @@ export default function VocabularyScreen() {
               </>
             ) : null}
 
-            {selected?.part_of_speech ? (
-              <Text style={styles.metaDetail}>Part of speech · {selected.part_of_speech}</Text>
-            ) : null}
-
-            {selected?.source_file ? (
-              <Text style={styles.metaDetail}>Source · {selected.source_file}</Text>
-            ) : null}
+            {selected?.part_of_speech ? <Text style={styles.metaDetail}>Part of speech · {selected.part_of_speech}</Text> : null}
+            {selected?.source_file ? <Text style={styles.metaDetail}>Source · {selected.source_file}</Text> : null}
 
             <Pressable style={styles.modalPractice} onPress={() => { setSelected(null); router.push('/practice'); }}>
               <Text style={styles.modalPracticeText}>Practice this word →</Text>
@@ -297,6 +280,7 @@ const styles = StyleSheet.create({
   wordTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   word: { color: '#172033', fontSize: 15, fontWeight: '800' },
   meaning: { color: '#667085', fontSize: 12, lineHeight: 18, marginTop: 3 },
+  definition: { color: '#98A2B3', fontSize: 11, lineHeight: 16, marginTop: 2 },
   level: { color: '#5B5CE2', backgroundColor: '#EEEFFF', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, fontSize: 10, fontWeight: '900', overflow: 'hidden' },
   chevron: { color: '#98A2B3', fontSize: 26, lineHeight: 26 },
   loadMore: { minHeight: 46, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D9DCE5', alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 8 },
