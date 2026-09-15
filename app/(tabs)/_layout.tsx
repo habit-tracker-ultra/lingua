@@ -46,13 +46,7 @@ export default function TabLayout() {
               const focused = item.name === '/' ? pathname === '/' : pathname.startsWith(item.name);
               const hovered = hoveredItem === item.name;
               return (
-                <Pressable
-                  key={item.name}
-                  onPress={() => go(item.name)}
-                  onHoverIn={() => setHoveredItem(item.name)}
-                  onHoverOut={() => setHoveredItem(null)}
-                  style={[styles.navItem, (focused || hovered) && { backgroundColor: theme.soft }]}
-                >
+                <Pressable key={item.name} onPress={() => go(item.name)} onHoverIn={() => setHoveredItem(item.name)} onHoverOut={() => setHoveredItem(null)} style={[styles.navItem, (focused || hovered) && { backgroundColor: theme.soft }]}>
                   <View style={[styles.iconBox, focused && { backgroundColor: theme.primary }, !focused && { backgroundColor: hovered ? theme.soft : theme.surfaceAlt }]}>
                     <Text style={[styles.icon, { color: focused ? '#fff' : theme.muted }]}>{item.icon}</Text>
                   </View>
@@ -63,10 +57,7 @@ export default function TabLayout() {
             })}
 
             <View onMouseEnter={() => Platform.OS === 'web' && setAppearanceOpen(true)} onMouseLeave={() => Platform.OS === 'web' && setAppearanceOpen(false)}>
-              <Pressable
-                onPress={() => setAppearanceOpen((v) => !v)}
-                style={[styles.navItem, appearanceOpen && { backgroundColor: theme.soft }]}
-              >
+              <Pressable onPress={() => setAppearanceOpen((v) => !v)} style={[styles.navItem, appearanceOpen && { backgroundColor: theme.soft }]}>
                 <View style={[styles.iconBox, { backgroundColor: appearanceOpen ? theme.primary : theme.surfaceAlt }]}><Text style={[styles.icon, { color: appearanceOpen ? '#fff' : theme.muted }]}>◐</Text></View>
                 <Text style={[styles.navLabel, { color: appearanceOpen ? theme.primary : theme.ink }]}>Appearance</Text>
               </Pressable>
@@ -79,13 +70,7 @@ export default function TabLayout() {
                       const active = themeName === item.name;
                       const hover = hoveredTheme === item.name;
                       return (
-                        <Pressable
-                          key={item.name}
-                          onPress={() => setTheme(item.name as ThemeName)}
-                          onHoverIn={() => setHoveredTheme(item.name)}
-                          onHoverOut={() => setHoveredTheme(null)}
-                          style={[styles.themeChip, { borderColor: active ? theme.primary : theme.line, backgroundColor: hover || active ? item.soft || item.bg : item.bg }]}
-                        >
+                        <Pressable key={item.name} onPress={() => setTheme(item.name as ThemeName)} onHoverIn={() => setHoveredTheme(item.name)} onHoverOut={() => setHoveredTheme(null)} style={[styles.themeChip, { borderColor: active ? theme.primary : theme.line, backgroundColor: active || hover ? theme.soft : item.bg }]}>
                           <Text style={styles.themeEmoji}>{item.emoji}</Text><Text style={[styles.themeChipText, { color: item.ink }]}>{item.label}</Text>
                         </Pressable>
                       );
@@ -100,9 +85,7 @@ export default function TabLayout() {
       ) : null}
 
       <View style={styles.content}>
-        {!sidebarOpen ? (
-          <Pressable onPress={() => setSidebarOpen(true)} style={[styles.menuButton, { backgroundColor: theme.primary }]} accessibilityLabel="Show sidebar"><Text style={styles.menuText}>☰</Text></Pressable>
-        ) : null}
+        {!sidebarOpen ? <Pressable onPress={() => setSidebarOpen(true)} style={[styles.menuButton, { backgroundColor: theme.primary }]} accessibilityLabel="Show sidebar"><Text style={styles.menuText}>☰</Text></Pressable> : null}
         <Slot />
       </View>
     </View>
