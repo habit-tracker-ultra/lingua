@@ -49,7 +49,7 @@ export default function VocabularyScreen() {
   const refresh = async () => { setRefreshing(true); await load(true); setRefreshing(false); };
 
   const renderItem = ({ item }: { item: VocabularyWord }) => (
-    <Pressable onPress={() => setSelected(item)} style={({ hovered, pressed }) => [styles.row, { backgroundColor: hovered || pressed ? theme.soft : theme.surface, borderColor: theme.line }]}>
+    <Pressable onPress={() => setSelected(item)} style={({ pressed }) => [styles.row, { backgroundColor: pressed ? theme.soft : theme.surface, borderColor: theme.line }]}>
       <View style={styles.rowMain}>
         <View style={styles.titleLine}>
           <Text style={[styles.word, { color: theme.ink }]} selectable>{String(item.word || 'Untitled')}</Text>
