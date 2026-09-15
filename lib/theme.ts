@@ -31,7 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeName(name);
     if (typeof window !== 'undefined') window.localStorage.setItem('lingua.theme', name);
   };
-  return <ThemeContext.Provider value={{ theme, themeName, setTheme }}>{children}</ThemeContext.Provider>;
+  return React.createElement(ThemeContext.Provider, { value: { theme, themeName, setTheme } }, children);
 }
 
 export function useTheme() {
