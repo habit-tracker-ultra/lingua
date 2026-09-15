@@ -8,6 +8,8 @@ type VocabularyWord = { id: string; word: string; meaning: string | null; defini
 const PAGE_SIZE = 30;
 const cleanSearch = (value: string) => value.replace(/[,%()]/g, ' ').trim();
 const displayMeaning = (item: VocabularyWord) => item.meaning || item.definition || 'Meaning not available';
+const hasRealText = (value: string | null | undefined) => Boolean(value && /[\p{L}\p{N}]/u.test(value));
+const isUsableWord = (item: VocabularyWord) => hasRealText(item.word);
 
 export default function VocabularyScreen() {
   const { theme } = useTheme();
@@ -38,8 +40,8 @@ export default function VocabularyScreen() {
     const [result, count] = await Promise.all([q, cq]);
     if (result.error) { setError(result.error.message); setLoading(false); setLoadingMore(false); return; }
     if (count.error) { setError(count.error.message); setLoading(false); setLoadingMore(false); return; }
-    const next = (result.data ?? []) as VocabularyWord[];
-    offset.current = reset ? next.length : offset.current + next.length;
+    const next = ((result.data ?? []) as VocabularyWord[]).filter(isUsableWord);
+    offset.current = reset ? (result.data ?? []).length : offset.current + (result.data ?? []).length;
     setWords((current) => reset ? next : [...current, ...next]);
     setTotalWords(count.count ?? 0);
     setLoading(false); setLoadingMore(false);
@@ -56,7 +58,7 @@ export default function VocabularyScreen() {
           {item.level ? <Text style={[styles.level, { color: theme.primary, backgroundColor: theme.soft }]}>{item.level}</Text> : null}
         </View>
         {!compact ? <Text style={[styles.meaning, { color: theme.muted }]} numberOfLines={2} selectable>{String(displayMeaning(item))}</Text> : null}
-        {!compact && item.example_sentence ? <Text style={[styles.example, { color: theme.muted }]} numberOfLines={1} selectable>Example: {String(item.example_sentence)}</Text> : null}
+        {!compact && item.example_sentence && hasRealText(item.example_sentence) ? <Text style={[styles.example, { color: theme.muted }]} numberOfLines={1} selectable>Example: {String(item.example_sentence)}</Text> : null}
       </View>
       <Text style={[styles.chevron, { color: theme.muted }]}>›</Text>
     </Pressable>
