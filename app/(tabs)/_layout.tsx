@@ -10,14 +10,8 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.muted,
-        tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
-        tabBarStyle: {
-          height: Platform.OS === 'ios' ? 84 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 22 : 8,
-          paddingTop: 6,
-          borderTopColor: '#E7E9F0',
-          backgroundColor: '#FFFFFF',
-        },
+        tabBarLabelStyle: { fontWeight: '700', fontSize: 10 },
+        tabBarStyle: { height: Platform.OS === 'ios' ? 84 : 64, paddingBottom: Platform.OS === 'ios' ? 22 : 8, paddingTop: 6, borderTopColor: '#E7E9F0', backgroundColor: '#FFFFFF' },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarLabel: 'Home' }} />
@@ -25,6 +19,7 @@ export default function TabLayout() {
       <Tabs.Screen name="practice" options={{ title: 'Practice', tabBarLabel: 'Practice' }} />
       <Tabs.Screen name="speak" options={{ title: 'Speak', tabBarLabel: 'Speak' }} />
       <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarLabel: 'Progress' }} />
+      <Tabs.Screen name="import" options={{ title: 'Bulk Import', tabBarLabel: 'Import' }} />
     </Tabs>
   );
 }
