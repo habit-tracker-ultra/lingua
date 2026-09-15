@@ -19,8 +19,6 @@ const scenarios: Scenario[] = [
   { topic: 'Daily life', goal: 'Talk naturally about your routine, plans, and interests.', opening: "Hey! How has your day been going? What have you been up to?" },
 ];
 
-const FALLBACK_REPLY = 'I can still coach you locally, but the AI service is not connected yet. Try another sentence and I’ll help you improve it.';
-
 function localCoach(text: string) {
   const value = text.trim();
   if (!value) return 'Try saying a complete sentence. For example: Could I have a cappuccino, please?';
@@ -29,7 +27,15 @@ function localCoach(text: string) {
   return 'Good job. Your sentence is clear. Now try extending the idea with one more detail.';
 }
 
+async function ensureSignedIn() {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) return;
+  const { error } = await supabase.auth.signInAnonymously();
+  if (error) throw new Error(`Authentication failed: ${error.message}`);
+}
+
 async function getAiReply(scenario: Scenario, history: Message[], userText: string) {
+  await ensureSignedIn();
   const { data, error } = await supabase.functions.invoke('lingua-speak', {
     body: { scenario, history: history.slice(-10), userText },
   });
@@ -46,6 +52,7 @@ export default function SpeakScreen() {
   const [listening, setListening] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [aiConnected, setAiConnected] = useState(true);
+  const [connectionMessage, setConnectionMessage] = useState('');
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => () => { recognitionRef.current?.stop?.(); Speech.stop(); }, []);
@@ -61,6 +68,7 @@ export default function SpeakScreen() {
 
     const previous = messages;
     setInput('');
+    setConnectionMessage('');
     setMessages((current) => [...current, { from: 'me', text: clean }]);
     setThinking(true);
 
@@ -69,9 +77,11 @@ export default function SpeakScreen() {
       setAiConnected(true);
       setMessages((current) => [...current, { from: 'ai', text: reply }]);
       speak(reply);
-    } catch {
+    } catch (error) {
       setAiConnected(false);
-      const reply = localCoach(clean) || FALLBACK_REPLY;
+      const message = error instanceof Error ? error.message : 'Unknown AI connection error.';
+      setConnectionMessage(message);
+      const reply = localCoach(clean);
       setMessages((current) => [...current, { from: 'ai', text: reply }]);
       speak(reply);
     } finally {
@@ -113,6 +123,7 @@ export default function SpeakScreen() {
     setScenario(next);
     setMessages([{ from: 'ai', text: scenarios[next].opening }]);
     setInput('');
+    setConnectionMessage('');
     setAiConnected(true);
     speak(scenarios[next].opening);
   };
@@ -127,7 +138,7 @@ export default function SpeakScreen() {
         </View>
         <View style={[styles.status, aiConnected ? styles.statusGood : styles.statusFallback]}>
           <View style={[styles.statusDot, aiConnected ? styles.statusDotGood : styles.statusDotFallback]} />
-          <Text style={styles.statusText}>{aiConnected ? 'AI online' : 'Offline coaching'}</Text>
+          <Text style={styles.statusText}>{aiConnected ? 'AI online' : 'AI connection issue'}</Text>
         </View>
       </View>
 
@@ -149,6 +160,7 @@ export default function SpeakScreen() {
           </View>
         ))}
         {thinking ? <View style={styles.thinking}><View style={styles.thinkingDot} /><View style={styles.thinkingDot} /><View style={styles.thinkingDot} /><Text style={styles.thinkingText}>AI is thinking…</Text></View> : null}
+        {connectionMessage ? <View style={styles.errorBox}><Text style={styles.errorTitle}>AI connection issue</Text><Text style={styles.errorText}>{connectionMessage}</Text></View> : null}
 
         <TextInput
           value={input}
@@ -193,6 +205,7 @@ const styles = StyleSheet.create({
   bubble:{backgroundColor:'#F7F7FB',borderRadius:17,padding:14,marginBottom:10,maxWidth:'82%'},bubbleMe:{backgroundColor:'#5B5CE2',alignSelf:'flex-end'},
   text:{color:'#273047',fontSize:14,lineHeight:20},textMe:{color:'#fff',fontSize:14,lineHeight:20},listenAgain:{color:'#5B5CE2',fontSize:11,fontWeight:'800',marginTop:9},
   thinking:{flexDirection:'row',alignItems:'center',gap:5,marginBottom:10},thinkingDot:{width:6,height:6,borderRadius:3,backgroundColor:'#8A8F9F'},thinkingText:{color:'#98A2B3',fontSize:12,marginLeft:3},
+  errorBox:{backgroundColor:'#FFF4E5',borderWidth:1,borderColor:'#F9DBA8',borderRadius:12,padding:10,marginBottom:10},errorTitle:{color:'#9A5B00',fontSize:12,fontWeight:'900'},errorText:{color:'#7A5A2A',fontSize:11,lineHeight:16,marginTop:3},
   input:{minHeight:78,borderWidth:1,borderColor:'#D9DCE5',borderRadius:14,padding:12,color:'#172033',fontSize:14,textAlignVertical:'top',backgroundColor:'#fff'},
   controls:{flexDirection:'row',alignItems:'center',gap:10,marginTop:10},mic:{width:52,height:52,borderRadius:26,backgroundColor:'#5B5CE2',alignItems:'center',justifyContent:'center'},micActive:{backgroundColor:'#292C63'},micText:{color:'#fff',fontSize:20},
   send:{flex:1,backgroundColor:'#5B5CE2',borderRadius:12,padding:14,alignItems:'center'},sendText:{color:'#fff',fontWeight:'900'},disabled:{opacity:0.45},hint:{color:'#98A2B3',fontSize:11,lineHeight:17,marginTop:9}
