@@ -80,13 +80,18 @@ export default function VocabularyScreen() {
     }
 
     const nextWords = dataResult.data ?? [];
-    const nextList = reset ? nextWords : [...words, ...nextWords];
-    wordCountRef.current = nextList.length;
-    setWords(nextList);
+    if (reset) {
+      wordCountRef.current = nextWords.length;
+      setWords(nextWords);
+    } else {
+      wordCountRef.current += nextWords.length;
+      setWords((current) => [...current, ...nextWords]);
+    }
+
     setTotalWords(countResult.count ?? 0);
     setLoading(false);
     setLoadingMore(false);
-  }, [normalizedSearch, words]);
+  }, [normalizedSearch]);
 
   useEffect(() => {
     const timer = setTimeout(() => loadVocabulary(true), 250);
