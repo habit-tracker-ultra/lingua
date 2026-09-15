@@ -1,6 +1,6 @@
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/theme';
 
@@ -24,10 +24,14 @@ export default function TabLayout() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
+  useEffect(() => {
+    setSidebarOpen(!isMobileWeb);
+  }, [isMobileWeb]);
+
   const go = (name: string) => { router.push(name as never); if (isMobileWeb) setSidebarOpen(false); };
   const signOut = async () => { setSigningOut(true); await supabase.auth.signOut(); setSigningOut(false); };
 
-  const sidebar = sidebarOpen ? <View style={[styles.sidebar, isMobileWeb && styles.mobileSidebar, { backgroundColor: theme.surface, borderRightColor: theme.line }]}>
+  const sidebar = sidebarOpen ? <View style={[styles.sidebar, !isMobileWeb && styles.desktopSidebar, isMobileWeb && styles.mobileSidebar, { backgroundColor: theme.surface, borderColor: theme.line }]}>
     <View style={styles.brandRow}><View style={[styles.brandMark, { backgroundColor: theme.primary }]}><Text style={styles.brandMarkText}>L</Text></View><View style={styles.brandCopy}><Text style={[styles.brandName, { color: theme.ink }]}>Lingua<Text style={{ color: theme.primary }}>.</Text></Text><Text style={[styles.brandTag, { color: theme.muted }]}>English, made natural.</Text></View><Pressable onPress={() => setSidebarOpen(false)} style={[styles.collapseButton, { backgroundColor: theme.surfaceAlt }]} accessibilityLabel="Hide sidebar"><Text style={[styles.collapseText, { color: theme.muted }]}>‹</Text></Pressable></View>
     <Text style={[styles.sectionLabel, { color: theme.muted }]}>LEARN</Text>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.navList}>
@@ -41,15 +45,15 @@ export default function TabLayout() {
     </View>
   </View> : null;
 
-  return <View style={[styles.shell, { backgroundColor: theme.bg }]}>
+  return <View style={[styles.shell, { backgroundColor: theme.bg }, !isMobileWeb && styles.desktopShell]}>
     {!isMobileWeb ? sidebar : null}
     {isMobileWeb && sidebarOpen ? <Pressable onPress={() => setSidebarOpen(false)} style={styles.backdrop} accessibilityLabel="Close sidebar" /> : null}
     {isMobileWeb ? sidebar : null}
-    <View style={styles.content}>
+    <View style={[styles.content, !isMobileWeb && styles.desktopContent]}>
       {isMobileWeb && !sidebarOpen ? <Pressable onPress={() => setSidebarOpen(true)} style={[styles.menuButton, { backgroundColor: theme.primary }]} accessibilityLabel="Show sidebar"><Text style={styles.menuText}>☰</Text></Pressable> : null}
       <Slot />
     </View>
   </View>;
 }
 
-const styles=StyleSheet.create({shell:{flex:1,flexDirection:'row',minHeight:'100%',position:'relative'},sidebar:{width:252,borderRightWidth:1,paddingHorizontal:14,paddingTop:18,paddingBottom:12},mobileSidebar:{position:'absolute',left:0,top:0,bottom:0,width:290,zIndex:30,elevation:12,shadowOpacity:.2,shadowRadius:16,shadowOffset:{width:4,height:0}},backdrop:{position:'absolute',left:0,right:0,top:0,bottom:0,zIndex:20,backgroundColor:'rgba(0,0,0,.28)'},content:{flex:1,minWidth:0,position:'relative'},brandRow:{height:58,flexDirection:'row',alignItems:'center',paddingHorizontal:4,marginBottom:18},brandMark:{width:40,height:40,borderRadius:13,alignItems:'center',justifyContent:'center'},brandMarkText:{color:'#fff',fontWeight:'900',fontSize:18},brandCopy:{marginLeft:10,flex:1},brandName:{fontSize:20,fontWeight:'900',letterSpacing:-.5},brandTag:{fontSize:9,marginTop:1},collapseButton:{width:30,height:30,borderRadius:10,alignItems:'center',justifyContent:'center'},collapseText:{fontSize:22,lineHeight:22,fontWeight:'700'},sectionLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.2,paddingHorizontal:8,marginBottom:8},navList:{paddingBottom:16},navItem:{height:50,borderRadius:14,flexDirection:'row',alignItems:'center',paddingHorizontal:8,marginBottom:4,position:'relative'},iconBox:{width:34,height:34,borderRadius:10,alignItems:'center',justifyContent:'center'},icon:{fontSize:15,fontWeight:'900'},navLabel:{fontSize:13,fontWeight:'800',marginLeft:10},activeBar:{position:'absolute',right:5,width:3,height:23,borderRadius:3},profileActions:{borderTopWidth:1,paddingTop:10,gap:8},profileButton:{minHeight:54,borderRadius:14,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:9},profileIcon:{width:34,height:34,borderRadius:10,alignItems:'center',justifyContent:'center'},profileIconText:{fontWeight:'900',fontSize:13},profileName:{fontSize:12,fontWeight:'900'},profileMeta:{fontSize:9,marginTop:1},aboutButton:{minHeight:48,borderRadius:14,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:9},aboutIcon:{width:34,height:34,borderRadius:10,textAlign:'center',textAlignVertical:'center',fontWeight:'900',fontSize:17,backgroundColor:'transparent'},aboutName:{fontSize:12,fontWeight:'900'},rightsText:{fontSize:8,textAlign:'center',marginTop:2,marginBottom:1},signOut:{borderRadius:10,paddingVertical:9,alignItems:'center'},signOutText:{fontSize:10,fontWeight:'800'},menuButton:{position:'absolute',right:16,bottom:20,zIndex:15,width:50,height:50,borderRadius:16,alignItems:'center',justifyContent:'center',shadowOpacity:.2,shadowRadius:10,elevation:5},menuText:{color:'#fff',fontSize:21,fontWeight:'900'}});
+const styles=StyleSheet.create({shell:{flex:1,flexDirection:'row',minHeight:'100%',position:'relative'},desktopShell:{padding:12,gap:16},sidebar:{width:252,borderRightWidth:1,paddingHorizontal:14,paddingTop:18,paddingBottom:12,borderRadius:18},desktopSidebar:{},mobileSidebar:{position:'absolute',left:0,top:0,bottom:0,width:290,maxWidth:'88%',zIndex:30,elevation:12,shadowOpacity:.2,shadowRadius:16,shadowOffset:{width:4,height:0},borderRadius:0},backdrop:{position:'absolute',left:0,right:0,top:0,bottom:0,zIndex:20,backgroundColor:'rgba(0,0,0,.28)'},content:{flex:1,minWidth:0,position:'relative'},desktopContent:{borderRadius:18,overflow:'hidden'},brandRow:{height:58,flexDirection:'row',alignItems:'center',paddingHorizontal:4,marginBottom:18},brandMark:{width:40,height:40,borderRadius:13,alignItems:'center',justifyContent:'center'},brandMarkText:{color:'#fff',fontWeight:'900',fontSize:18},brandCopy:{marginLeft:10,flex:1},brandName:{fontSize:20,fontWeight:'900',letterSpacing:-.5},brandTag:{fontSize:9,marginTop:1},collapseButton:{width:30,height:30,borderRadius:10,alignItems:'center',justifyContent:'center'},collapseText:{fontSize:22,lineHeight:22,fontWeight:'700'},sectionLabel:{fontSize:9,fontWeight:'900',letterSpacing:1.2,paddingHorizontal:8,marginBottom:8},navList:{paddingBottom:16},navItem:{height:50,borderRadius:14,flexDirection:'row',alignItems:'center',paddingHorizontal:8,marginBottom:4,position:'relative'},iconBox:{width:34,height:34,borderRadius:10,alignItems:'center',justifyContent:'center'},icon:{fontSize:15,fontWeight:'900'},navLabel:{fontSize:13,fontWeight:'800',marginLeft:10},activeBar:{position:'absolute',right:5,width:3,height:23,borderRadius:3},profileActions:{borderTopWidth:1,paddingTop:10,gap:8},profileButton:{minHeight:54,borderRadius:14,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:9},profileIcon:{width:34,height:34,borderRadius:10,alignItems:'center',justifyContent:'center'},profileIconText:{fontWeight:'900',fontSize:13},profileName:{fontSize:12,fontWeight:'900'},profileMeta:{fontSize:9,marginTop:1},aboutButton:{minHeight:48,borderRadius:14,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:9},aboutIcon:{width:34,height:34,borderRadius:10,textAlign:'center',textAlignVertical:'center',fontWeight:'900',fontSize:17,backgroundColor:'transparent'},aboutName:{fontSize:12,fontWeight:'900'},rightsText:{fontSize:8,textAlign:'center',marginTop:2,marginBottom:1},signOut:{borderRadius:10,paddingVertical:9,alignItems:'center'},signOutText:{fontSize:10,fontWeight:'800'},menuButton:{position:'absolute',left:16,top:16,zIndex:15,width:44,height:44,borderRadius:14,alignItems:'center',justifyContent:'center',shadowOpacity:.2,shadowRadius:10,elevation:5},menuText:{color:'#fff',fontSize:20,fontWeight:'900'}});
