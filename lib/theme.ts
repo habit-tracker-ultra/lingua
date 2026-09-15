@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { supabase } from './supabase';
 
-export type ThemeName = 'classic' | 'sakura' | 'blossom' | 'ocean' | 'forest' | 'sunset' | 'midnight' | 'lavender';
-
+export type ThemeName = 'classic' | 'sakura' | 'blossom' | 'ocean' | 'forest' | 'sunset' | 'midnight' | 'lavender' | 'neon';
 type Theme = { name: ThemeName; label: string; emoji: string; bg: string; surface: string; surfaceAlt: string; ink: string; muted: string; primary: string; soft: string; line: string };
 
 export const themes: Theme[] = [
@@ -13,6 +13,7 @@ export const themes: Theme[] = [
   { name: 'sunset', label: 'Sunset', emoji: '🌅', bg: '#FFF8F3', surface: '#FFFFFF', surfaceAlt: '#FFF0E5', ink: '#382017', muted: '#876B5D', primary: '#E45F3A', soft: '#FFE1D4', line: '#F0CFC0' },
   { name: 'midnight', label: 'Midnight', emoji: '🌙', bg: '#111525', surface: '#191E31', surfaceAlt: '#222840', ink: '#F5F7FF', muted: '#A9B2CC', primary: '#8B8DFF', soft: '#2D3156', line: '#343A55' },
   { name: 'lavender', label: 'Lavender', emoji: '💜', bg: '#F8F5FF', surface: '#FFFFFF', surfaceAlt: '#F0EAFF', ink: '#29213D', muted: '#756A8F', primary: '#8A63D2', soft: '#E9DFFF', line: '#DDD0F4' },
+  { name: 'neon', label: 'Neon', emoji: '⚡', bg: '#090A12', surface: '#111426', surfaceAlt: '#171A32', ink: '#F7F9FF', muted: '#A7B0C9', primary: '#39FFB6', soft: '#182E35', line: '#29334A' },
 ];
 
 type ThemeContextValue = { theme: Theme; themeName: ThemeName; setTheme: (name: ThemeName) => void };
@@ -26,10 +27,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     return 'classic';
   });
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!mounted || !data.session) return;
+      const { data: profile } = await supabase.from('profiles').select('theme_name').eq('id', data.session.user.id).maybeSingle();
+      if (mounted && profile?.theme_name && themes.some((t) => t.name === profile.theme_name)) {
+        setThemeName(profile.theme_name as ThemeName);
+        if (typeof window !== 'undefined') window.localStorage.setItem('lingua.theme', profile.theme_name);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
   const theme = useMemo(() => themes.find((t) => t.name === themeName) ?? themes[0], [themeName]);
   const setTheme = (name: ThemeName) => {
     setThemeName(name);
     if (typeof window !== 'undefined') window.localStorage.setItem('lingua.theme', name);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) void supabase.from('profiles').update({ theme_name: name }).eq('id', data.session.user.id);
+    });
   };
   return React.createElement(ThemeContext.Provider, { value: { theme, themeName, setTheme } }, children);
 }
