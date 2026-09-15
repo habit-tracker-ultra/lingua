@@ -26,6 +26,8 @@ export default function PracticeScreen() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [mode, setMode] = useState<Mode>('mixed');
   const [questionCount, setQuestionCount] = useState(10);
+  const [customCount, setCustomCount] = useState('25');
+  const [customSelected, setCustomSelected] = useState(false);
   const [timer, setTimer] = useState(15);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -50,7 +52,7 @@ export default function PracticeScreen() {
     const { data, error: fetchError } = await supabase
       .from('vocabulary')
       .select('id,word,meaning,definition,example_sentence')
-      .limit(220);
+      .limit(Math.max(220, questionCount * 8));
 
     if (fetchError || !data?.length) {
       setError(fetchError?.message || 'No vocabulary found.');
@@ -122,6 +124,13 @@ export default function PracticeScreen() {
     setRemaining(timer);
   };
 
+  const applyCustomCount = () => {
+    const parsed = Number.parseInt(customCount, 10);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 200) return;
+    setCustomSelected(false);
+    setQuestionCount(parsed);
+  };
+
   const center = (content: React.ReactNode) => <View style={[styles.center, { backgroundColor: theme.bg }]}>{content}</View>;
 
   if (loading) return center(<><ActivityIndicator color={theme.primary} /><Text style={[styles.muted, { color: theme.muted }]}>Preparing your practice session…</Text></>);
@@ -175,7 +184,15 @@ export default function PracticeScreen() {
       <Text style={[styles.settingLabel, { color: theme.muted }]}>Practice mode</Text>
       <View style={styles.row}>{([['mixed', 'Mixed'], ['meaning', 'Multiple choice'], ['typing', 'Type answer']] as const).map(([value, label]) => <Pressable key={value} onPress={() => { setMode(value); setQuestions([]); }} style={[styles.chip, { backgroundColor: theme.surfaceAlt }, mode === value && { backgroundColor: theme.soft, borderColor: theme.primary }]}><Text style={[styles.chipText, { color: theme.ink }]}>{label}</Text></Pressable>)}</View>
       <Text style={[styles.settingLabel, { color: theme.muted }]}>Questions</Text>
-      <View style={styles.row}>{[5, 10, 20].map(value => <Pressable key={value} onPress={() => setQuestionCount(value)} style={[styles.chip, { backgroundColor: theme.surfaceAlt }, questionCount === value && { backgroundColor: theme.soft, borderColor: theme.primary }]}><Text style={[styles.chipText, { color: theme.ink }]}>{value}</Text></Pressable>)}</View>
+      <View style={styles.row}>
+        {[5, 10, 20].map(value => <Pressable key={value} onPress={() => { setCustomSelected(false); setQuestionCount(value); }} style={[styles.chip, { backgroundColor: theme.surfaceAlt }, !customSelected && questionCount === value && { backgroundColor: theme.soft, borderColor: theme.primary }]}><Text style={[styles.chipText, { color: theme.ink }]}>{value}</Text></Pressable>)}
+        <Pressable onPress={() => setCustomSelected(true)} style={[styles.chip, { backgroundColor: theme.surfaceAlt }, customSelected && { backgroundColor: theme.soft, borderColor: theme.primary }]}><Text style={[styles.chipText, { color: theme.ink }]}>Custom</Text></Pressable>
+      </View>
+      {customSelected && <View style={styles.customRow}>
+        <TextInput value={customCount} onChangeText={value => setCustomCount(value.replace(/[^0-9]/g, '').slice(0, 3))} keyboardType="number-pad" maxLength={3} placeholder="1–200" placeholderTextColor={theme.muted} style={[styles.customInput, { borderColor: theme.line, backgroundColor: theme.surface, color: theme.ink }]} />
+        <Pressable disabled={!Number.isInteger(Number.parseInt(customCount, 10)) || Number.parseInt(customCount, 10) < 1 || Number.parseInt(customCount, 10) > 200} onPress={applyCustomCount} style={[styles.applyButton, { backgroundColor: theme.primary }, (!Number.isInteger(Number.parseInt(customCount, 10)) || Number.parseInt(customCount, 10) < 1 || Number.parseInt(customCount, 10) > 200) && styles.disabled]}><Text style={styles.white}>Apply</Text></Pressable>
+      </View>}
+      <Text style={[styles.settingHint, { color: theme.muted }]}>Choose 5, 10, 20, or set any custom amount from 1 to 200.</Text>
       <Text style={[styles.settingLabel, { color: theme.muted }]}>Question timer</Text>
       <View style={styles.row}>{[0, 10, 15, 30].map(value => <Pressable key={value} onPress={() => { setTimer(value); setRemaining(value); }} style={[styles.chip, { backgroundColor: theme.surfaceAlt }, timer === value && { backgroundColor: theme.soft, borderColor: theme.primary }]}><Text style={[styles.chipText, { color: theme.ink }]}>{value === 0 ? '∞' : `${value}s`}</Text></Pressable>)}</View>
     </View>
@@ -219,6 +236,10 @@ const styles = StyleSheet.create({
   settingsTitle: { fontWeight: '900', fontSize: 15 },
   settingLabel: { fontSize: 11, fontWeight: '800', marginTop: 14, textTransform: 'uppercase', letterSpacing: 0.7 },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 8 },
+  customRow: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 10 },
+  customInput: { width: 100, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, fontWeight: '700' },
+  applyButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
+  settingHint: { fontSize: 12, lineHeight: 18, marginTop: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'transparent' },
   chipText: { fontWeight: '800' },
 });
