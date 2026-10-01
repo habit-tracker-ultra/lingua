@@ -6,6 +6,7 @@ import { useTheme } from '../../lib/theme';
 
 const items = [
   { name: '/', label: 'Home', icon: '⌂' },
+  { name: '/quick', label: 'Quick', icon: '⚡' },
   { name: '/vocabulary', label: 'Words', icon: 'Aa' },
   { name: '/flashcards', label: 'Flashcards', icon: '▣' },
   { name: '/practice', label: 'Practice', icon: '✓' },
