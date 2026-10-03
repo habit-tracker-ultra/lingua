@@ -7,8 +7,8 @@ import { useTheme } from '../../lib/theme';
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const [stats, setStats] = useState<PracticeStats>(getPracticeStats()); const [vocabCount, setVocabCount] = useState(0);
-  useEffect(()=>{const load=async()=>{const {count}=await supabase.from('vocabulary').select('id',{count:'exact',head:true});setVocabCount(count||0)};load();const id=setInterval(()=>setStats(getPracticeStats()),1000);return()=>clearInterval(id)},[]);
+  const [stats, setStats] = useState<PracticeStats>({ questions: 0, correct: 0, sessions: 0, lastSessionAt: null }); const [vocabCount, setVocabCount] = useState(0);
+  useEffect(()=>{setStats(getPracticeStats()); const load=async()=>{const {count}=await supabase.from('vocabulary').select('id',{count:'exact',head:true});setVocabCount(count||0)};load();const id=setInterval(()=>setStats(getPracticeStats()),1000);return()=>clearInterval(id)},[]);
   const accuracy=stats.questions?Math.round(stats.correct/stats.questions*100):0;
   const Card=({children,style}:{children:React.ReactNode;style?:object})=><View style={[styles.card,{backgroundColor:theme.surface,borderColor:theme.line},style]}>{children}</View>;
   return <ScrollView style={{flex:1,backgroundColor:theme.bg}} contentContainerStyle={styles.content}>
